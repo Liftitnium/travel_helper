@@ -1,0 +1,101 @@
+from __future__ import annotations
+
+from models.flight import Flight
+
+IATA_TO_CITY: dict[str, str] = {
+    "AGP": "Malaga",
+    "AMS": "Amsterdam",
+    "ATH": "Athens",
+    "BCN": "Barcelona",
+    "BER": "Berlin",
+    "BGY": "Milan",
+    "BLL": "Billund",
+    "BLQ": "Bologna",
+    "BOD": "Bordeaux",
+    "BRU": "Brussels",
+    "BTS": "Bratislava",
+    "BUD": "Budapest",
+    "CAG": "Cagliari",
+    "CDG": "Paris",
+    "CFU": "Corfu",
+    "CGN": "Cologne",
+    "CIA": "Rome",
+    "CRL": "Brussels",
+    "CTA": "Catania",
+    "DBV": "Dubrovnik",
+    "DUB": "Dublin",
+    "DUS": "Dusseldorf",
+    "EDI": "Edinburgh",
+    "EIN": "Eindhoven",
+    "ESU": "Essaouira",
+    "EVN": "Yerevan",
+    "FAO": "Faro",
+    "FCO": "Rome",
+    "FEZ": "Fez",
+    "FRA": "Frankfurt",
+    "GDN": "Gdansk",
+    "GRO": "Girona",
+    "HAM": "Hamburg",
+    "HEL": "Helsinki",
+    "HER": "Heraklion",
+    "IBZ": "Ibiza",
+    "IST": "Istanbul",
+    "KRK": "Krakow",
+    "LCA": "Larnaca",
+    "LIS": "Lisbon",
+    "LJU": "Ljubljana",
+    "LPA": "Gran-Canaria",
+    "LTN": "London",
+    "MAD": "Madrid",
+    "MAN": "Manchester",
+    "MLA": "Malta",
+    "MRS": "Marseille",
+    "MXP": "Milan",
+    "NAP": "Naples",
+    "NCE": "Nice",
+    "OPO": "Porto",
+    "ORY": "Paris",
+    "OSL": "Oslo",
+    "OTP": "Bucharest",
+    "PAL": "Palma-de-Mallorca",
+    "PMI": "Palma-de-Mallorca",
+    "PMO": "Palermo",
+    "PRG": "Prague",
+    "PSA": "Pisa",
+    "RAK": "Marrakech",
+    "RHO": "Rhodes",
+    "RIX": "Riga",
+    "SOF": "Sofia",
+    "SPU": "Split",
+    "STN": "London",
+    "SVQ": "Seville",
+    "SXF": "Berlin",
+    "TFS": "Tenerife",
+    "TIA": "Tirana",
+    "TLL": "Tallinn",
+    "TLS": "Toulouse",
+    "TSF": "Venice",
+    "VCE": "Venice",
+    "VIE": "Vienna",
+    "VLC": "Valencia",
+    "VNO": "Vilnius",
+    "WAW": "Warsaw",
+    "WMI": "Warsaw",
+    "WRO": "Wroclaw",
+    "ZAD": "Zadar",
+    "ZAG": "Zagreb",
+    "ZRH": "Zurich",
+}
+
+
+def get_hostel_city(flight: Flight) -> str:
+    """Resolve a flight to a city name suitable for hostel searches."""
+    iata = flight.destination
+    if iata and iata in IATA_TO_CITY:
+        return IATA_TO_CITY[iata]
+    return flight.destination_city
+
+
+def get_city_slug(city_name: str) -> str:
+    """Convert city name to URL slug for Hostelworld."""
+    return city_name.replace(" ", "-")

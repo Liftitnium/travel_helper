@@ -1,0 +1,6 @@
+selenium
+webdriver-manager
+python-telegram-bot>=20.0
+apscheduler
+python-dotenv
+aiosqlite
