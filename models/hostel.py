@@ -11,7 +11,7 @@ class Hostel:
     rating: float | None
     review_count: int | None
     booking_link: str
-    source: str  # "hostelworld" or "booking"
+    source: str
     currency: str = "EUR"
 
     def __repr__(self) -> str:

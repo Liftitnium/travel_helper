@@ -29,7 +29,6 @@ FARE_FINDER_URL = (
 
 
 class RyanairScraper(BaseScraper):
-    """Scrape Ryanair fare-finder via URL parameters and extract destination cards."""
 
     def search(self, origin: str, max_price: float | None = None) -> list[Flight]:
         flights: list[Flight] = []
@@ -47,26 +46,22 @@ class RyanairScraper(BaseScraper):
         date_in = end_date.strftime("%Y-%m-%d")
 
         url = FARE_FINDER_URL.format(origin=origin, date_out=date_out, date_in=date_in)
-        logger.info("Step 1/5 — Loading Ryanair fare finder: %s", url)
+        logger.info("Loading Ryanair fare finder: %s", url)
         driver.get(url)
         self.random_delay(3, 5)
 
-        logger.info("Step 2/5 — Dismissing cookie consent")
         self.dismiss_cookies(SEL["cookie_accept"])
         self.random_delay(1, 2)
 
-        logger.info("Step 3/5 — Waiting for destination cards to load")
         cards = self._wait_for_cards(driver)
         if not cards:
-            logger.warning("No destination cards found on Ryanair fare finder")
+            logger.warning("No destination cards found")
             return []
-        logger.info("Found %d destination cards initially", len(cards))
+        logger.info("Found %d cards initially", len(cards))
 
-        logger.info("Step 4/5 — Scrolling to load all destinations")
         cards = self._scroll_and_collect(driver)
-        logger.info("Total destination cards after scrolling: %d", len(cards))
+        logger.info("Total cards after scrolling: %d", len(cards))
 
-        logger.info("Step 5/5 — Parsing %d destination cards", len(cards))
         results: list[Flight] = []
         for i, card in enumerate(cards):
             try:
@@ -74,16 +69,10 @@ class RyanairScraper(BaseScraper):
                 if flight is None:
                     continue
                 if flight.nights < TRIP_MIN_NIGHTS or flight.nights > TRIP_MAX_NIGHTS:
-                    logger.debug(
-                        "Skipping %s — %d nights (outside %d–%d range)",
-                        flight.destination_city, flight.nights, TRIP_MIN_NIGHTS, TRIP_MAX_NIGHTS,
-                    )
                     continue
                 if max_price is not None and flight.price > max_price:
-                    logger.debug("Skipping %s — €%.0f exceeds max €%.0f", flight.destination_city, flight.price, max_price)
                     continue
                 results.append(flight)
-                logger.debug("Parsed card %d: %s", i + 1, flight)
             except Exception:
                 logger.debug("Failed to parse card %d", i + 1, exc_info=True)
 
@@ -94,10 +83,7 @@ class RyanairScraper(BaseScraper):
     def _wait_for_cards(self, driver) -> list:
         sel = SEL["destination_card"]
         if sel == "___REPLACE_WITH_ACTUAL_SELECTOR___":
-            logger.warning(
-                "destination_card selector is still a placeholder! "
-                "Open scrapers/selectors.py and paste the real CSS selector."
-            )
+            logger.warning("destination_card selector is a placeholder")
             return []
         try:
             WebDriverWait(driver, 30).until(
@@ -105,28 +91,24 @@ class RyanairScraper(BaseScraper):
             )
             return driver.find_elements(By.CSS_SELECTOR, sel)
         except Exception:
-            logger.warning("Timed out waiting for destination cards (selector: %s)", sel)
+            logger.warning("Timed out waiting for destination cards")
             return []
 
     def _scroll_and_collect(self, driver) -> list:
-        """Scroll the results list to trigger lazy-loading until no new cards appear."""
         sel = SEL["destination_card"]
         if sel == "___REPLACE_WITH_ACTUAL_SELECTOR___":
             return []
 
         previous_count = 0
         stable_rounds = 0
-        max_scrolls = 15
 
-        for i in range(max_scrolls):
+        for i in range(15):
             cards = driver.find_elements(By.CSS_SELECTOR, sel)
             current_count = len(cards)
-            logger.debug("Scroll %d — %d cards loaded", i + 1, current_count)
 
             if current_count == previous_count:
                 stable_rounds += 1
                 if stable_rounds >= 2:
-                    logger.debug("No new cards after %d stable scrolls, stopping", stable_rounds)
                     break
             else:
                 stable_rounds = 0
@@ -143,12 +125,10 @@ class RyanairScraper(BaseScraper):
         return driver.find_elements(By.CSS_SELECTOR, sel)
 
     def _parse_card(self, card, origin: str) -> Flight | None:
-        # The card is a <button data-iata-code="ESU" data-ref="RESULT_ESU_2026-04-10_2026-04-17">
         iata_code = card.get_attribute("data-iata-code") or ""
         data_ref = card.get_attribute("data-ref") or ""
 
         if not iata_code:
-            logger.debug("Card missing data-iata-code attribute")
             return None
 
         city = self._extract_text(card, SEL["city_name"])
@@ -156,12 +136,10 @@ class RyanairScraper(BaseScraper):
         price_text = self._extract_text(card, SEL["price"])
 
         if not city:
-            logger.debug("No city name found in card for %s", iata_code)
             return None
 
         price = self.safe_float(price_text) if price_text else None
         if price is None or price <= 0:
-            logger.debug("No valid price for %s (raw: %r)", city, price_text)
             return None
 
         outbound, return_d = self._parse_data_ref(data_ref)
@@ -169,7 +147,6 @@ class RyanairScraper(BaseScraper):
             dates_text = self._extract_text(card, SEL["dates"])
             outbound, return_d = self._parse_dates(dates_text)
         if outbound is None or return_d is None:
-            logger.debug("Could not parse dates for %s (data-ref: %r)", city, data_ref)
             return None
 
         booking_link = (
@@ -203,7 +180,6 @@ class RyanairScraper(BaseScraper):
 
     @staticmethod
     def _parse_data_ref(data_ref: str) -> tuple[date | None, date | None]:
-        """Parse 'RESULT_ESU_2026-04-10_2026-04-17' into (outbound, return) dates."""
         if not data_ref:
             return None, None
         match = re.match(
@@ -221,7 +197,6 @@ class RyanairScraper(BaseScraper):
 
     @staticmethod
     def _parse_dates(text: str) -> tuple[date | None, date | None]:
-        """Parse date range like 'Apr 9 - 16' or 'Apr 9 - May 2' into (outbound, return)."""
         if not text:
             return None, None
 

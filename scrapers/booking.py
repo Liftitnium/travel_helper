@@ -13,10 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 class BookingScraper(BaseScraper):
-    """Fallback scraper: Booking.com filtered to hostels."""
 
     def search(self, city: str, checkin: date, checkout: date, max_results: int = 3) -> list[Hostel]:
-        """Single search — opens and closes its own browser."""
         hostels: list[Hostel] = []
         try:
             with self.browser() as driver:
@@ -26,7 +24,6 @@ class BookingScraper(BaseScraper):
         return hostels
 
     def search_reuse(self, city: str, checkin: date, checkout: date, max_results: int = 3) -> list[Hostel]:
-        """Search using an already-open browser. Call open_browser() first, close_browser() when done."""
         try:
             return self._scrape(self.driver, city, checkin, checkout, max_results)
         except Exception:
@@ -43,7 +40,7 @@ class BookingScraper(BaseScraper):
             f"&checkin={checkin_str}"
             f"&checkout={checkout_str}"
             f"&group_adults=1&no_rooms=1"
-            f"&nflt=ht_id%3D203"  # 203 = hostel property type
+            f"&nflt=ht_id%3D203"
             f"&order=price"
         )
 

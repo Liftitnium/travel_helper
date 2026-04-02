@@ -60,8 +60,6 @@ WELCOME = (
 TOP_DESTINATIONS = 5
 
 
-# ── Simple commands ──────────────────────────────────────────────────────────
-
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     await upsert_user(user.id, username=user.username, origin=DEFAULT_ORIGIN)
@@ -122,8 +120,6 @@ async def cmd_alerts(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         await update.message.reply_text("🔕 Daily alerts *disabled*.", parse_mode="Markdown")
 
 
-# ── /search ConversationHandler ──────────────────────────────────────────────
-
 async def search_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.effective_user
     user_data = await get_user(user.id)
@@ -159,7 +155,6 @@ async def received_origin(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 
 async def received_price(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Run the full pipeline: flights → deduplicate → hostels → assemble trips."""
     text = update.message.text.strip().lower()
     origin = context.user_data.get("search_origin", DEFAULT_ORIGIN)
 
@@ -177,7 +172,6 @@ async def received_price(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     price_label = f"under €{max_price:.0f}" if max_price else "any price"
     loop = asyncio.get_event_loop()
 
-    # ── Step 1: Search flights ───────────────────────────────────────────
     await update.message.reply_text(
         f"🟦 Searching *Ryanair* for flights from *{origin}* ({price_label})...",
         parse_mode="Markdown",
@@ -218,7 +212,6 @@ async def received_price(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     else:
         await update.message.reply_text("🟣 Wizz Air: no flights found.")
 
-    # Combine, deduplicate by destination, sort by price
     all_flights = ryanair_flights + wizzair_flights
     all_flights.sort(key=lambda f: f.price)
 
@@ -254,7 +247,6 @@ async def received_price(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         parse_mode="Markdown",
     )
 
-    # ── Step 2: Search hostels for each destination ──────────────────────
     trips: list[Trip] = []
     try:
         trips = await loop.run_in_executor(
@@ -267,7 +259,6 @@ async def received_price(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         )
         trips = [Trip(flight=f, hostel=None) for f in top_flights]
 
-    # ── Step 3: Sort — trips with hostels first, then flight-only ────────
     with_hostel = sorted([t for t in trips if t.has_hostel], key=lambda t: t.total_cost)
     without_hostel = sorted([t for t in trips if not t.has_hostel], key=lambda t: t.total_cost)
     sorted_trips = (with_hostel + without_hostel)[:MAX_RESULTS]
@@ -285,19 +276,14 @@ async def received_price(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             parse_mode="Markdown",
         )
 
-    # ── Step 4: Format and send ──────────────────────────────────────────
     message = format_trip_list(sorted_trips, origin)
     await _send_long_message(update, message)
     return ConversationHandler.END
 
 
-# ── Synchronous hostel pipeline (runs in executor) ───────────────────────────
-
 def _hostel_pipeline(flights: list[Flight]) -> list[Trip]:
-    """Search hostels for each flight destination. Runs synchronously in a thread."""
     trips: list[Trip] = []
 
-    # Phase 1: try Hostelworld for all destinations
     hw = HostelworldScraper()
     hw.open_browser()
     needs_fallback: list[tuple[int, Flight]] = []
@@ -324,7 +310,6 @@ def _hostel_pipeline(flights: list[Flight]) -> list[Trip]:
     finally:
         hw.close_browser()
 
-    # Phase 2: try Booking.com for destinations that Hostelworld missed
     if needs_fallback:
         logger.info("Booking.com fallback for %d destinations", len(needs_fallback))
         bk = BookingScraper()
@@ -351,8 +336,6 @@ def _hostel_pipeline(flights: list[Flight]) -> list[Trip]:
     return trips
 
 
-# ── Helpers ──────────────────────────────────────────────────────────────────
-
 async def _send_long_message(update: Update, message: str) -> None:
     if len(message) > 4000:
         for i in range(0, len(message), 4000):
@@ -371,8 +354,6 @@ async def search_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     await update.message.reply_text("Search cancelled. Send /search to start again.")
     return ConversationHandler.END
 
-
-# ── Application setup ────────────────────────────────────────────────────────
 
 def main() -> None:
     if not TELEGRAM_BOT_TOKEN:

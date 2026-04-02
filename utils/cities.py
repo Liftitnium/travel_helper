@@ -89,7 +89,6 @@ IATA_TO_CITY: dict[str, str] = {
 
 
 def get_hostel_city(flight: Flight) -> str:
-    """Resolve a flight to a city name suitable for hostel searches."""
     iata = flight.destination
     if iata and iata in IATA_TO_CITY:
         return IATA_TO_CITY[iata]
@@ -97,5 +96,4 @@ def get_hostel_city(flight: Flight) -> str:
 
 
 def get_city_slug(city_name: str) -> str:
-    """Convert city name to URL slug for Hostelworld."""
     return city_name.replace(" ", "-")

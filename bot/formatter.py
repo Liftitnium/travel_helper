@@ -4,14 +4,10 @@ from models.flight import Flight
 from models.trip import Trip
 
 AIRLINE_ICON = {
-    "Ryanair": "\U0001f7e6",   # blue square
-    "Wizz Air": "\U0001f7e3",  # purple circle
+    "Ryanair": "\U0001f7e6",
+    "Wizz Air": "\U0001f7e3",
 }
 
-
-# ---------------------------------------------------------------------------
-# Flight-only formatting
-# ---------------------------------------------------------------------------
 
 def format_flight(flight: Flight, index: int) -> str:
     out_str = flight.outbound_date.strftime("%b %-d")
@@ -43,10 +39,6 @@ def format_flight_list(flights: list[Flight], origin: str) -> str:
     footer = "\n\n_Prices scraped just now — book fast before they change!_"
     return header + "\n" + body + footer
 
-
-# ---------------------------------------------------------------------------
-# Full trip formatting (flight + hostel package)
-# ---------------------------------------------------------------------------
 
 def format_trip(trip: Trip, index: int) -> str:
     f = trip.flight

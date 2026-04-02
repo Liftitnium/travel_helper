@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 
 
 class BaseScraper:
-    """Shared Selenium helpers and anti-detection setup."""
 
     def __init__(self) -> None:
         self.driver: webdriver.Chrome | None = None
@@ -49,7 +48,6 @@ class BaseScraper:
             self.close_browser()
 
     def open_browser(self) -> None:
-        """Open a browser session that persists until close_browser() is called."""
         opts = self._build_options()
         service = Service(ChromeDriverManager().install())
         self.driver = webdriver.Chrome(service=service, options=opts)
@@ -79,7 +77,6 @@ class BaseScraper:
         return self.driver.find_elements(by, value)
 
     def dismiss_cookies(self, selector: str | None = None) -> None:
-        """Click cookie-accept button using the provided selector, or try common fallbacks."""
         candidates = []
         if selector and selector != "___REPLACE_WITH_ACTUAL_SELECTOR___":
             candidates.append(selector)
@@ -125,13 +122,11 @@ class BaseScraper:
             return None
 
     def human_type(self, element, text: str, min_delay: float = 0.05, max_delay: float = 0.15) -> None:
-        """Type text character by character with random delays to mimic human input."""
         for char in text:
             element.send_keys(char)
             time.sleep(random.uniform(min_delay, max_delay))
 
     def scroll_panel(self, panel_selector: str | None, pause: float = 2.0, max_scrolls: int = 10) -> None:
-        """Scroll a panel (or the page) to trigger lazy-loading. Stops when no new content appears."""
         for i in range(max_scrolls):
             if panel_selector and panel_selector != "___REPLACE_WITH_ACTUAL_SELECTOR___":
                 try:

@@ -22,7 +22,6 @@ _executor = ThreadPoolExecutor(max_workers=2)
 
 
 def _run_pipeline(origin: str, budget: float | None = None) -> list[Trip]:
-    """Synchronous pipeline: scrape flights then hostels, assemble trips."""
     logger.info("Pipeline: searching flights from %s", origin)
 
     flights = []
@@ -59,7 +58,6 @@ def _run_pipeline(origin: str, budget: float | None = None) -> list[Trip]:
             logger.exception("Hostelworld failed for %s", city)
 
         if not hostels:
-            logger.info("Hostelworld empty for %s, trying Booking.com", city)
             try:
                 hostels = search_booking(city, flight.outbound_date, flight.return_date)
             except Exception:
@@ -80,7 +78,6 @@ async def run_pipeline_async(origin: str, budget: float | None = None) -> list[T
 
 
 async def daily_scan() -> None:
-    """Scheduled daily scan for all users with alerts enabled."""
     from db.database import get_alert_users
 
     logger.info("Starting daily scan")
